@@ -8,6 +8,7 @@ import * as fs from 'fs';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors();
+  app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -23,9 +24,12 @@ async function bootstrap() {
     fs.mkdirSync(logoPath, { recursive: true });
   }
 
-  // Servir les fichiers statiques de storage sous le préfixe /storage/
+  // Servir les fichiers statiques de storage sous /storage/ et /api/storage/
   app.useStaticAssets(storagePath, {
     prefix: '/storage/',
+  });
+  app.useStaticAssets(storagePath, {
+    prefix: '/api/storage/',
   });
 
   const port = process.env.PORT || 5003;
