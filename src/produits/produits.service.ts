@@ -142,6 +142,7 @@ export class ProduitsService {
 
     const created: any[] = [];
     const updated: any[] = [];
+    const merged: any[] = [];
 
     await this.dataSource.transaction(async (m) => {
       const catMap = new Map<string, Categorie>();
@@ -229,19 +230,33 @@ export class ProduitsService {
           );
         }
 
-        const newLot = await m.save(
-          Lot,
-          m.create(Lot, {
-            produitId: produit.id,
-            quantiteStock: Number(item.quantite_initiale || 0),
-            prixReference: String(item.prix || 0),
-          })
-        );
+        const quantite = Number(item.quantite_initiale || 0);
+        const prix = Number(item.prix || 0);
+
+        // Un lot est identifié par son prix : si le produit a déjà un lot au même prix,
+        // on y ajoute la quantité au lieu de créer un lot en double.
+        const lotsExistants = isNew
+          ? []
+          : await m.find(Lot, { where: { produitId: produit.id }, order: { dateReception: 'ASC' } });
+        const lotMemePrix = lotsExistants.find((l) => Number(l.prixReference) === prix);
+
+        let lot: Lot;
+        if (lotMemePrix) {
+          lotMemePrix.quantiteStock += quantite;
+          lot = await m.save(Lot, lotMemePrix);
+        } else {
+          lot = await m.save(
+            Lot,
+            m.create(Lot, { produitId: produit.id, quantiteStock: quantite, prixReference: String(prix) })
+          );
+        }
 
         if (isNew) {
           created.push({ id: produit.id, nom: produit.nom, cat: cat.nom });
+        } else if (lotMemePrix) {
+          merged.push({ id: produit.id, nom: produit.nom, lotId: lot.id, prix, quantiteAjoutee: quantite });
         } else {
-          updated.push({ id: produit.id, nom: produit.nom, newLotId: newLot.id });
+          updated.push({ id: produit.id, nom: produit.nom, newLotId: lot.id });
         }
       }
 
@@ -260,11 +275,13 @@ export class ProduitsService {
     });
 
     return {
-      message: `Importation réussie : ${created.length} produit(s) créé(s), ${updated.length} lot(s) ajouté(s).`,
+      message: `Importation réussie : ${created.length} produit(s) créé(s), ${updated.length} lot(s) ajouté(s), ${merged.length} lot(s) existant(s) complété(s).`,
       countCreated: created.length,
       countUpdated: updated.length,
+      countMerged: merged.length,
       created,
       updated,
+      merged,
     };
   }
 }
