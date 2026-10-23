@@ -55,7 +55,7 @@ export class VentesService {
           throw new BadRequestException('La vente à l’unité est interdite pour ce conditionnement');
 
         const qteReelle = input.quantite * condition.facteurConversion;
-        if (lot.quantiteStock < qteReelle)
+        if (!produit.surCommande && lot.quantiteStock < qteReelle)
           throw new BadRequestException('Stock insuffisant sur le lot sélectionné');
 
         // estOffert vient du frontend (qui sait si la ligne est un cadeau automatique)
@@ -66,8 +66,10 @@ export class VentesService {
         if (!Number.isFinite(prix) || prix < 0)
           throw new BadRequestException('Prix réel invalide');
 
-        lot.quantiteStock -= qteReelle;
-        await m.save(Lot, lot);
+        if (!produit.surCommande) {
+          lot.quantiteStock -= qteReelle;
+          await m.save(Lot, lot);
+        }
 
         await m.save(LigneVente, {
           venteId: vente.id,
@@ -136,9 +138,13 @@ export class VentesService {
       const c = await m.findOneBy(ConditionnementProduit, { id: ligne.conditionnementId! });
       if (!lot || !c) throw new NotFoundException('Lot ou conditionnement introuvable');
 
-      lot.quantiteStock += ligne.quantite * c.facteurConversion;
+      const produit = await m.findOneBy(Produit, { id: ligne.produitId });
+      if (!produit?.surCommande) {
+        lot.quantiteStock += ligne.quantite * c.facteurConversion;
+        await m.save(lot);
+      }
       ligne.statut = StatutVente.ANNULEE;
-      await m.save([lot, ligne]);
+      await m.save(ligne);
 
       const actives = await m.findBy(LigneVente, { venteId });
       vente.total = actives

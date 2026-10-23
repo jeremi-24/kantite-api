@@ -23,6 +23,10 @@ export class Produit {
   @Column({ name: 'produit_offert_id', type: 'uuid', nullable: true })
   produitOffertId!: string | null;
 
+  /** Fabriqué sur commande (ex. verres optiques) : se vend sans stock, le stock n'est pas suivi. */
+  @Column({ name: 'sur_commande', default: false })
+  surCommande!: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

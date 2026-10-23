@@ -13,7 +13,7 @@ export class DashboardService {
 
   alertes() {
     return this.ds.query(
-      `SELECT p.*, COALESCE(SUM(l.quantite_stock),0)::int AS quantite_stock FROM produits p LEFT JOIN lots l ON l.produit_id::text=p.id::text GROUP BY p.id HAVING COALESCE(SUM(l.quantite_stock),0) < p.qte_min`
+      `SELECT p.*, COALESCE(SUM(l.quantite_stock),0)::int AS quantite_stock FROM produits p LEFT JOIN lots l ON l.produit_id::text=p.id::text WHERE NOT p.sur_commande GROUP BY p.id HAVING COALESCE(SUM(l.quantite_stock),0) < p.qte_min`
     );
   }
 
