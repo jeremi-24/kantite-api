@@ -8,6 +8,7 @@ export interface StoreSettings {
   telephone: string;
   email: string;
   devise: string;
+  slogan: string;
   piedDePage: string;
   nifStat: string;
   logoUrl: string;
@@ -19,6 +20,7 @@ const LIMITES: Record<keyof StoreSettings, number> = {
   telephone: 50,
   email: 150,
   devise: 20,
+  slogan: 150,
   piedDePage: 300,
   nifStat: 100,
   logoUrl: 300,
