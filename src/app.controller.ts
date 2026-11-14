@@ -4,12 +4,17 @@ import {
   Post,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AppService } from './app.service.js';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
+import { JwtAuthGuard } from './auth/jwt-auth.guard.js';
+import { RolesGuard } from './auth/roles.guard.js';
+import { Roles } from './common/roles.decorator.js';
+import { Role } from './common/enums.js';
 
 @Controller()
 export class AppController {
@@ -21,6 +26,8 @@ export class AppController {
   }
 
   @Post('upload/logo')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({

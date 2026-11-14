@@ -4,3 +4,6 @@ dist/
 *.log
 storage/logo/*
 !storage/logo/.gitkeep
+
+# Réglages de la boutique (non versionnés)
+data/
